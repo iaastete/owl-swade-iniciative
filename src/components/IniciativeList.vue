@@ -1,19 +1,17 @@
 <script setup>
 import Dropdown from './Dropdown.vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
-const props = defineProps(['deckEvent']);
+const props = defineProps(['items']);
+const items = ref(props.items);
+const preventShuffle = ref(false);
 
-const items = ref([
-    {name: 'Item 1', value: '1', suit: 'Heart'},
-    {name: 'Item 4', value: '2', suit: 'Club'},
-    {name: 'Item 3', value: '3', suit: 'Diamond'},
-    {name: 'Item 2', value: '4', suit: 'Spade'},
-]);
 const draggedItem = ref(null);
+const editingItem = ref(null);
 
 const selectText = (event) => {
     event.target.select();
+    editingItem.value = true;
 };
 const handleDragStart = (index) => {
     draggedItem.value = index;
@@ -25,14 +23,24 @@ const handleDrop = (index) => {
     const droppedItem = items.value.splice(draggedItem.value, 1)[0];
     items.value.splice(index, 0, droppedItem);
     draggedItem.value = null;
+    preventShuffle.value = true;
+};
+
+const handleSuitChange = (item, value) => {
+    // if suit is Joker, set value to J★
+    if (value === 'Joker') {
+        item.value = 'J★';
+    }
+    item.suit = value;
+    sortOnSuit(item, value);
 };
 
 const customSortSuits = (a, b) => {
-    const suits = ['Spade', 'Heart', 'Diamond', 'Club'];
+    const suits = ['Joker', 'Spade', 'Heart', 'Diamond', 'Club'];
     return suits.indexOf(a.suit) - suits.indexOf(b.suit);
 };
 const customSortValues = (a, b) => {
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const values = ['', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'J★'];
     return values.indexOf(b.value) - values.indexOf(a.value);
 };
 const customSortItems = (a, b) => {
@@ -40,11 +48,33 @@ const customSortItems = (a, b) => {
     return customSortValues(a, b) || customSortSuits(a, b);
 };
 const sortOnBlur = (event) => {
+    editingItem.value = false;
+    items.value.sort(customSortItems);
+};
+const sortOnSuit = (item, value) => {
+    item.suit = value;
     items.value.sort(customSortItems);
 };
 
 items.value.sort(customSortItems);
+watch(props, (newProps, oldProps) => {
+    if (newProps.items !== oldProps.items) {
+        items.value = newProps.items;
+        items.value.sort(customSortItems);
+    }
+}, { deep: true });
 
+watch(items, () => {
+    if (editingItem.value) {
+        return ;
+    }
+    if (preventShuffle.value) {
+        preventShuffle.value = false;
+        return ;
+    } else {
+        items.value.sort(customSortItems);
+    }
+}, { deep: true });
 
 </script>
 
@@ -77,19 +107,19 @@ items.value.sort(customSortItems);
             <div class="aligned-element">
                 <label :for="item + 'value'"></label>
                 <input :id="item + 'value'" type="text"
-                maxlength="1"
+                maxlength="2"
+                @keyup="item.value = item.value.toUpperCase()"
                 v-model="item.value"
                 @focus="selectText"
-                @blur="sortOnBlur"
+                @blur="sortOnBlur()"
                 ></input>
                 <Dropdown class="dropdown-suit"
                     :default="item.suit"
-                    @input="value => item.suit = value"
+                    @input="value => handleSuitChange(item, value)"
                 />
             </div>
         </div>
     </div>
-    {{ props }}
 </template>
 
 <style scoped>
@@ -98,6 +128,7 @@ items.value.sort(customSortItems);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    max-height: 50vh;
 }
 
 .sortable-list .aligned-element {
@@ -135,16 +166,15 @@ items.value.sort(customSortItems);
 }
 
 input[type="text"] {
-    width: 20px;
+    width: 29px;
     height: 35px;
     padding-top: 2px;
     box-sizing: border-box;
     border: none;
     background-color: transparent;
     /* border: 1px solid red; */
-    text-align: center;
+    text-align: right;
     font-size: 20px;
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 select {
@@ -162,7 +192,6 @@ select {
     line-height: 3px;
     border: none;
     background-image: none;
-    /* background-color: blue; */
 }
 
 </style>

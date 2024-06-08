@@ -18,7 +18,7 @@ export default class Deck {
         }
 
         for (let i = 0; i < jokers; i++) {
-            this.deck.push({value: 'Joker', suit: 'Joker'});
+            this.deck.push({value: 'J★', suit: 'Joker'});
         }
     }
     
