@@ -7,7 +7,7 @@ import Deck from "./utils/deck";
 import Queue from "./utils/queue";
 
 import OBR from "@owlbear-rodeo/sdk";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 const ID = "com.iaastete.owl-swade-iniciative";
 const MAX_SIZE = 50;
@@ -95,18 +95,110 @@ const iniciativeRenderedList = ref([]);
 //   OBR.scene.items.onChange(renderList);
 // };
 
-const players = ref([
-    {name: 'Item 1'},
-    {name: 'Item 4'},
-    {name: 'Item 3'},
-    {name: 'Item 2'},
-    {name: 'Item 5'},
-]);
+const players = ref([]);
+const addPlayer = (id, name, metadata) => {
+  const player = {
+    id,
+    name,
+    value: null,
+    suit: null,
+  };
+  if (metadata) {
+    player.value = metadata.value;
+    player.suit = metadata.suit;
+  } 
+
+  if (players.value.some((p) => p.id === id)) return;
+  players.value.push(player);
+}
+const trimPlayers = (playerId, partyIds) => {
+  const currentIds = players.value.map((player) => player.id);
+  const toRemove = currentIds.filter((id) => {
+    const isPlayer = playerId === id;
+    if (partyIds.length === 0) return !isPlayer;
+    const isParty = partyIds.includes(id);
+    return !isPlayer && !isParty;
+  });
+  toRemove.forEach((id) => {
+    const index = players.value.findIndex((player) => player.id === id);
+    players.value.splice(index, 1);
+  });
+}
+const setupPlayerList = async () => {
+  const name = await OBR.player.getName();
+  const metadata = await OBR.player.getMetadata();
+  const extensionMetadata = metadata[`${ID}/metadata`];
+  addPlayer(OBR.player.id, name, extensionMetadata);
+
+  const party = await OBR.party.getPlayers();
+  party.forEach(async (player) => {
+    const metadata = player.metadata;
+    const extensionMetadata = metadata[`${ID}/metadata`];
+    addPlayer(player.id, player.name, extensionMetadata);
+  });
+
+  players.value.sort((a, b) => {
+    return a.name.localeCompare(b.name);
+  });
+
+  const handlePartyChange = async (party) => {
+    // remove players that left
+    const partyIds = party.map((player) => player.id);
+    trimPlayers(OBR.player.id, partyIds);
+    // add new players
+    party.forEach(async (player) => {
+      const metadata = player.metadata;
+      const extensionMetadata = metadata[`${ID}/metadata`];
+      addPlayer(player.id, player.name, extensionMetadata);
+    });
+
+    players.value.sort((a, b) => {
+      return a.name.localeCompare(b.name);
+    });
+  }
+  OBR.party.onChange(handlePartyChange)
+}
 
 const gameDeck = ref(new Deck());
-const deckNeedsShuffle = ref(false);
-// at the start of the game, shuffle the deck
 gameDeck.value.shuffle();
+const deckNeedsShuffle = ref(false);
+const computedDeckSize = computed(() => gameDeck.value.size());
+const decodeRoomDeckMetadata = (metadata) => {
+  const deckMetadata = metadata[`${ID}/metadata/deck`];
+  const roundCounterMetadata = metadata[`${ID}/metadata/roundCounter`];
+  const deckNeedsShuffleMetadata = metadata[`${ID}/metadata/deckNeedsShuffle`];
+  
+  console.log(deckMetadata, roundCounterMetadata, deckNeedsShuffleMetadata);
+  if (deckMetadata) {
+    const syncedDeck = new Deck();
+    syncedDeck.from(deckMetadata);
+    gameDeck.value = syncedDeck;
+  }
+
+  if (roundCounterMetadata) {
+    roundCounter.value = roundCounterMetadata;
+  }
+
+  if (deckNeedsShuffleMetadata) {
+    deckNeedsShuffle.value = deckNeedsShuffleMetadata;
+  }
+}
+const setupRoomDeck = async () => {
+  const roomMetadata = await OBR.room.getMetadata();
+  decodeRoomDeckMetadata(roomMetadata);
+
+  OBR.room.onMetadataChange(async (metadata) => {
+    decodeRoomDeckMetadata(metadata);
+  });
+}
+const syncDeck = async () => {
+  const roomMetadata = await OBR.room.getMetadata();
+  roomMetadata[`${ID}/metadata/deck`] = gameDeck.value.toString();
+  roomMetadata[`${ID}/metadata/roundCounter`] = roundCounter.value;
+  roomMetadata[`${ID}/metadata/deckNeedsShuffle`] = deckNeedsShuffle.value;
+  await OBR.room.setMetadata(roomMetadata);
+}
+
 const clearPlayers = () => {
   players.value.forEach((player) => {
     player.value = null;
@@ -126,13 +218,13 @@ const dealCardsToPlayers = () => {
 const handleDeckEvent = (event) => {
   if (event === "draw-all") {
     if (deckNeedsShuffle.value) {
-      gameDeck.value.shuffle();
+      gameDeck.value.reset(gameDeck.value.jokers);
       deckNeedsShuffle.value = false;
     }
     roundCounter.value += 1;
     dealCardsToPlayers();
   } else if (event === "shuffle") {
-    gameDeck.value.shuffle();
+    gameDeck.value.reset(gameDeck.value.jokers);
   } else if (event === "draw") {
     const card = gameDeck.value.deal();
     if (card.suit === "Joker") {
@@ -149,14 +241,16 @@ const handleDeckEvent = (event) => {
     roundCounter.value = 0;
     clearPlayers();
   }
+
+  syncDeck();
 };
 
 const resultLog = ref(new Queue(MAX_SIZE));
 const roundCounter = ref(0);
 
 OBR.onReady(() => {
-  // setupContextMenu();
-  // setupIniciativeList();
+  setupPlayerList();
+  setupRoomDeck();
 });
 
 </script>
@@ -168,6 +262,7 @@ OBR.onReady(() => {
     @deck-action="handleDeckEvent"
     />
   </header>
+  {{ computedDeckSize }} {{ deckNeedsShuffle }}
   <main>
     <IniciativeList
     :items="players"

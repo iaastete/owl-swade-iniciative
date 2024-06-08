@@ -1,9 +1,16 @@
 // define deck object
 export default class Deck {
-    constructor(jokers = 2) {
-        this.deck = [];
+    constructor(currentDeck=[], jokers=2) {
+        this.deck = currentDeck;
         this.jokers = jokers;
-        this.reset(jokers);
+        this.__CODE_SUIT = {
+            'Heart': 'h',
+            'Diamond': 'd',
+            'Club': 'c',
+            'Spade': 's',
+            'Joker': 'j'
+        };
+        if (currentDeck.length === 0) this.reset(jokers);
     }
     
     reset(jokers = 2) {
@@ -20,6 +27,8 @@ export default class Deck {
         for (let i = 0; i < jokers; i++) {
             this.deck.push({value: 'J★', suit: 'Joker'});
         }
+
+        return this.shuffle();
     }
     
     shuffle() {
@@ -40,5 +49,21 @@ export default class Deck {
             this.shuffle();
         }
         return this.deck.pop();
+    }
+
+    size() {
+        return this.deck.length;
+    }
+
+    toString() {
+        return this.deck.map(card => `${card.value}${this.__CODE_SUIT[card.suit]}`).join('-');
+    }
+
+    from(string) {
+        this.deck = string.split('-').map(card => {
+            const value = card.slice(0, -1);
+            const suit = Object.keys(this.__CODE_SUIT).find(key => this.__CODE_SUIT[key] === card.slice(-1));
+            return {value, suit};
+        });
     }
 }
