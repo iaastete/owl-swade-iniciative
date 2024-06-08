@@ -18,4 +18,16 @@ export default class Queue {
     clear() {
         this.queue = [];
     }
+    toString() {
+        if (this.queue.length === 0) return '';
+        return this.queue.map((item) => `${item.text}/${item.time}`).join(';');
+    }
+    from(string){
+        if (string === '') return this;
+        this.queue = string.split(';').map((item) => {
+            const [text, time] = item.split('/');
+            return { text, time };
+        });
+        return this;
+    }
 }

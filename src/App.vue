@@ -10,7 +10,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { ref, computed } from "vue";
 
 const ID = "com.iaastete.owl-swade-iniciative";
-const MAX_SIZE = 50;
+const MAX_SIZE = 10;
 const MAP_SUITS = {
   Spade: "♠",
   Heart: "♥",
@@ -19,8 +19,7 @@ const MAP_SUITS = {
   Joker: "J★",
 }
 
-const title = ref("Hello World");
-const iniciativeRenderedList = ref([]);
+const playerName = ref("");
 
 // const setupContextMenu = () => {
 //   OBR.contextMenu.create({
@@ -125,10 +124,10 @@ const trimPlayers = (playerId, partyIds) => {
   });
 }
 const setupPlayerList = async () => {
-  const name = await OBR.player.getName();
+  playerName.value = await OBR.player.getName();
   const metadata = await OBR.player.getMetadata();
   const extensionMetadata = metadata[`${ID}/metadata`];
-  addPlayer(OBR.player.id, name, extensionMetadata);
+  addPlayer(OBR.player.id, playerName.value, extensionMetadata);
 
   const party = await OBR.party.getPlayers();
   party.forEach(async (player) => {
@@ -162,13 +161,14 @@ const setupPlayerList = async () => {
 const gameDeck = ref(new Deck());
 gameDeck.value.shuffle();
 const deckNeedsShuffle = ref(false);
+const roundCounter = ref(0);
 const computedDeckSize = computed(() => gameDeck.value.size());
 const decodeRoomDeckMetadata = (metadata) => {
   const deckMetadata = metadata[`${ID}/metadata/deck`];
   const roundCounterMetadata = metadata[`${ID}/metadata/roundCounter`];
   const deckNeedsShuffleMetadata = metadata[`${ID}/metadata/deckNeedsShuffle`];
   
-  console.log(deckMetadata, roundCounterMetadata, deckNeedsShuffleMetadata);
+  // console.log(deckMetadata, roundCounterMetadata, deckNeedsShuffleMetadata);
   if (deckMetadata) {
     const syncedDeck = new Deck();
     syncedDeck.from(deckMetadata);
@@ -190,13 +190,6 @@ const setupRoomDeck = async () => {
   OBR.room.onMetadataChange(async (metadata) => {
     decodeRoomDeckMetadata(metadata);
   });
-}
-const syncDeck = async () => {
-  const roomMetadata = await OBR.room.getMetadata();
-  roomMetadata[`${ID}/metadata/deck`] = gameDeck.value.toString();
-  roomMetadata[`${ID}/metadata/roundCounter`] = roundCounter.value;
-  roomMetadata[`${ID}/metadata/deckNeedsShuffle`] = deckNeedsShuffle.value;
-  await OBR.room.setMetadata(roomMetadata);
 }
 
 const clearPlayers = () => {
@@ -232,7 +225,7 @@ const handleDeckEvent = (event) => {
     }
     const time = (new Date()).toLocaleTimeString().slice(0, 5);
     const result = {
-      text: `NAME - ${card.value}${MAP_SUITS[card.suit]}`,
+      text: `${playerName.value} - ${card.value}${MAP_SUITS[card.suit]}`,
       time: '[' + time + ']',
     }
     resultLog.value.enqueue(result);
@@ -242,14 +235,39 @@ const handleDeckEvent = (event) => {
     clearPlayers();
   }
 
-  syncDeck();
+  syncExtensionData();
 };
 
 const resultLog = ref(new Queue(MAX_SIZE));
-const roundCounter = ref(0);
+const decodeLogMetadata = (metadata) => {
+  const logMetadata = metadata[`${ID}/metadata/log`];
+  if (logMetadata) {
+    resultLog.value.from(logMetadata);
+  } else {
+    resultLog.value.clear();
+  }
+}
+const setupIniciativeLog = async () => {
+  const roomMetadata = await OBR.room.getMetadata();
+  decodeLogMetadata(roomMetadata);
+
+  OBR.room.onMetadataChange(async (metadata) => {
+    decodeLogMetadata(metadata);
+  });
+}
+
+const syncExtensionData = async () => {
+  const roomMetadata = await OBR.room.getMetadata();
+  roomMetadata[`${ID}/metadata/deck`] = gameDeck.value.toString();
+  roomMetadata[`${ID}/metadata/roundCounter`] = roundCounter.value;
+  roomMetadata[`${ID}/metadata/deckNeedsShuffle`] = deckNeedsShuffle.value;
+  roomMetadata[`${ID}/metadata/log`] = resultLog.value.toString();
+  await OBR.room.setMetadata(roomMetadata);
+}
 
 OBR.onReady(() => {
   setupPlayerList();
+  setupIniciativeLog();
   setupRoomDeck();
 });
 
