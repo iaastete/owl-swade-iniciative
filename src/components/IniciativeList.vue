@@ -1,8 +1,10 @@
 <script setup>
 import Dropdown from './Dropdown.vue';
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps(['items']);
+const emiters = defineEmits(['updateItems']);
+
 const items = ref(props.items);
 const preventShuffle = ref(false);
 
@@ -24,6 +26,7 @@ const handleDrop = (index) => {
     items.value.splice(index, 0, droppedItem);
     draggedItem.value = null;
     preventShuffle.value = true;
+    emiters('updateItems', items.value);
 };
 
 const handleSuitChange = (item, value) => {
@@ -50,30 +53,27 @@ const customSortItems = (a, b) => {
 const sortOnBlur = (event) => {
     editingItem.value = false;
     items.value.sort(customSortItems);
+    emiters('updateItems', items.value);
 };
 const sortOnSuit = (item, value) => {
     item.suit = value;
     items.value.sort(customSortItems);
+    emiters('updateItems', items.value);
 };
 
-items.value.sort(customSortItems);
 watch(props, (newProps, oldProps) => {
-    if (newProps.items !== oldProps.items) {
-        items.value = newProps.items;
-        items.value.sort(customSortItems);
-    }
+    items.value = newProps.items;
 }, { deep: true });
 
 watch(items, () => {
-    if (editingItem.value) {
-        return ;
-    }
+    if (editingItem.value) return;
     if (preventShuffle.value) {
         preventShuffle.value = false;
         return ;
-    } else {
-        items.value.sort(customSortItems);
     }
+
+    // esta linea ordena los cambios locales, pero previene los cambios manuales por broadcast
+    items.value.sort(customSortItems);
 }, { deep: true });
 
 </script>
