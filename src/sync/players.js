@@ -1,4 +1,5 @@
 import { ID } from '../utils/config.js';
+import { customSortItems } from '../utils/sorting.js';
 
 import OBR from '@owlbear-rodeo/sdk';
 import { ref } from 'vue';
@@ -30,6 +31,8 @@ const trimPlayers = (playerId, partyIds) => {
         return !isPlayer && !isParty;
     });
 
+    if (toRemove.length === 0) return;
+
     toRemove.forEach((id) => {
         const index = players.value.findIndex((player) => player.id === id);
         players.value.splice(index, 1);
@@ -38,7 +41,6 @@ const trimPlayers = (playerId, partyIds) => {
 
 const setupPlayerList = async (playerId, playerName) => {
     const metadata = await OBR.player.getMetadata();
-    console.log(metadata)
     addPlayer(playerId, playerName, metadata);
   
     const party = await OBR.party.getPlayers();
@@ -85,6 +87,7 @@ const dealCardsToPlayers = (playerId, gameDeck, deckNeedsShuffle) => {
         player.value = card.value;
         player.suit = card.suit;
     });
+    players.value.sort(customSortItems);
     players.value.forEach((player) =>{
         if (player.id !== playerId) sendPlayerUpdate(player.id, player.name, 'deal');
     });
@@ -93,13 +96,7 @@ const dealCardsToPlayers = (playerId, gameDeck, deckNeedsShuffle) => {
 const setupMyComms = async (playerId) => {
     const channel = `${ID}/${playerId}`;
     OBR.broadcast.onMessage(channel, async (message) => {
-        players.value = JSON.parse(message.data.value);
-
-        // update my metadata
-        // const playerMetadata = await OBR.player.getMetadata();
-        // playerMetadata[`${ID}/metadata/value`] = player.value;
-        // playerMetadata[`${ID}/metadata/suit`] = player.suit;
-        // OBR.player.setMetadata(playerMetadata);
+        players.value =JSON.parse(message.data.value);
     });
 }
 
@@ -110,7 +107,6 @@ const sendPlayerUpdate = async (targetId, playerName, source) => {
         from: playerName + '-' + source,
         value: JSON.stringify(players.value),
     };
-    console.log('broadcasting', player.name, data)
     OBR.broadcast.sendMessage(channel, data);
 }
 

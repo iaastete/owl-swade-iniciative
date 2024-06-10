@@ -5,8 +5,9 @@ import IniciativeList from './components/IniciativeList.vue';
 
 import { resultLog, setupLogCommunication } from "./sync/result-log.js";
 import { gameDeck, deckNeedsShuffle, roundCounter, setupRoomDeck, setupRoundComms } from "./sync/game-deck.js";
-import { players, setupPlayerList, clearPlayers, dealCardsToPlayers, setupMyComms, handleManualIniciativeUpdate } from "./sync/players.js";
-import { ID, MAP_SUITS } from "./utils/config";
+import { actionDraw, actionDrawAll, actionClear, actionShuffle } from "./sync/game-deck.js";
+import { players, setupPlayerList, setupMyComms, handleManualIniciativeUpdate } from "./sync/players.js";
+import { ID } from "./utils/config";
 
 import OBR from "@owlbear-rodeo/sdk";
 import { ref } from "vue";
@@ -14,48 +15,12 @@ import { ref } from "vue";
 const playerName = ref("");
 const playerId = ref("");
 
-const actionDrawAll = () => {
-  if (deckNeedsShuffle.value) {
-    gameDeck.value.reset(gameDeck.value.jokers);
-    deckNeedsShuffle.value = false;
-  }
-  roundCounter.value += 1;
-  OBR.broadcast.sendMessage(`${ID}/roundCounter`, roundCounter.value);
-  dealCardsToPlayers(playerId.value, gameDeck.value, deckNeedsShuffle.value);
-}
-
-const actionShuffle = () => {
-  gameDeck.value.reset(gameDeck.value.jokers);
-}
-
-const actionDraw = () => {
-  const card = gameDeck.value.deal();
-  if (card.suit === "Joker") deckNeedsShuffle.value = true;
-
-  const time = (new Date()).toLocaleTimeString().slice(0, 5);
-  const result = {
-    text: `${playerName.value} - ${card.value}${MAP_SUITS[card.suit]}`,
-    time: '[' + time + ']',
-  }
-
-  resultLog.value.enqueue(result);
-  OBR.broadcast.sendMessage(`${ID}/log`, result);
-}
-
-const actionClear = () => {
-  resultLog.value.clear();
-  roundCounter.value = 0;
-  OBR.broadcast.sendMessage(`${ID}/roundCounter`, roundCounter.value);
-  OBR.broadcast.sendMessage(`${ID}/log`, { command: 'clear' });
-  clearPlayers(playerId.value);
-}
-
 const handleDeckEvent = (event) => {
 
-  if (event === "draw") actionDraw();
-  if (event === "draw-all") actionDrawAll();
+  if (event === "draw") actionDraw(playerName.value);
+  if (event === "draw-all") actionDrawAll(playerId.value);
   if (event === "shuffle") actionShuffle();
-  if (event === "clear") actionClear();
+  if (event === "clear") actionClear(playerId.value);
 
   syncExtensionData();
 };

@@ -1,5 +1,5 @@
 const ID = "com.iaastete.owl-swade-iniciative";
-const MAX_SIZE = 10;
+const MAX_SIZE = 30;
 const MAP_SUITS = {
   Spade: "♠",
   Heart: "♥",

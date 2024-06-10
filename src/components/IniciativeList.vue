@@ -6,7 +6,6 @@ const props = defineProps(['items']);
 const emiters = defineEmits(['updateItems']);
 
 const items = ref(props.items);
-const preventShuffle = ref(false);
 
 const draggedItem = ref(null);
 const editingItem = ref(null);
@@ -25,55 +24,28 @@ const handleDrop = (index) => {
     const droppedItem = items.value.splice(draggedItem.value, 1)[0];
     items.value.splice(index, 0, droppedItem);
     draggedItem.value = null;
-    preventShuffle.value = true;
     emiters('updateItems', items.value);
 };
 
-const handleSuitChange = (item, value) => {
-    // if suit is Joker, set value to J★
-    if (value === 'Joker') {
-        item.value = 'J★';
+const handleSuitChange = (item, suit) => {
+    if (suit === 'Joker') {
+        // this way we prevent double watcher trigger
+        const copyItem = { ...item };
+        copyItem.value = 'J★';
+        copyItem.suit = 'Joker';
+        Object.assign(item, copyItem);
     }
-    item.suit = value;
-    sortOnSuit(item, value);
+    else item.suit = suit;
+    emiters('updateItems', items.value);    
 };
 
-const customSortSuits = (a, b) => {
-    const suits = ['Joker', 'Spade', 'Heart', 'Diamond', 'Club'];
-    return suits.indexOf(a.suit) - suits.indexOf(b.suit);
-};
-const customSortValues = (a, b) => {
-    const values = ['', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'J★'];
-    return values.indexOf(b.value) - values.indexOf(a.value);
-};
-const customSortItems = (a, b) => {
-    // sort by value, resolve ties by suit
-    return customSortValues(a, b) || customSortSuits(a, b);
-};
 const sortOnBlur = (event) => {
     editingItem.value = false;
-    items.value.sort(customSortItems);
-    emiters('updateItems', items.value);
-};
-const sortOnSuit = (item, value) => {
-    item.suit = value;
-    items.value.sort(customSortItems);
     emiters('updateItems', items.value);
 };
 
 watch(props, (newProps, oldProps) => {
     items.value = newProps.items;
-}, { deep: true });
-
-watch(items, () => {
-    if (editingItem.value) return;
-    if (preventShuffle.value) {
-        preventShuffle.value = false;
-        return ;
-    }
-
-    // esta linea ordena los cambios locales, pero previene los cambios manuales por broadcast
-    items.value.sort(customSortItems);
 }, { deep: true });
 
 </script>
