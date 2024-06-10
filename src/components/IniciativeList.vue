@@ -28,6 +28,7 @@ const handleDrop = (index) => {
 };
 
 const handleSuitChange = (item, suit) => {
+    if (suit === '' || suit === null || suit === (undefined)) return;
     if (suit === 'Joker') {
         // this way we prevent double watcher trigger
         const copyItem = { ...item };
