@@ -1,9 +1,12 @@
 {
-    "name": "Hello, World!",
+    "name": "Swade Tracker",
     "version": "1.0.0",
     "manifest_version": 1,
+    "author": "Iván Astete",
+    "icon": "/laser.svg",
+    "description": "A simple initiative tracker for Savage Worlds Adventure Edition",
     "action": {
-      "title": "Hello, World!",
+      "title": "Iniciative Tracker",
       "icon": "/icon.svg",
       "popover": "/",
       "height": 600,
