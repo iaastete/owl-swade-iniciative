@@ -5,6 +5,7 @@
   "author": "Ivan Astete",
   "icon": "/laser.svg",
   "description": "A simple initiative tracker for Savage Worlds Adventure Edition",
+  "homepage_url": "https://owl-iniciative-tracker.web.app/",
   "action": {
     "title": "Iniciative Tracker",
     "icon": "/icon.svg",
