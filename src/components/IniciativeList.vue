@@ -107,7 +107,6 @@ watch(props, (newProps, oldProps) => {
 .sortable-list .aligned-element {
     margin-left: 3px;
     margin-bottom: 2px;
-    cursor: move;
     transition: background-color 0.2s ease;
 }
 
@@ -126,6 +125,7 @@ watch(props, (newProps, oldProps) => {
     border-radius: 6px;
     margin-bottom: 5px;
     margin-left: 5px;
+    cursor: move;
 }
 
 .aligned-element {
