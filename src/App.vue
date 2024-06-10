@@ -10,13 +10,14 @@ import { players, setupPlayerList, setupMyComms, handleManualIniciativeUpdate } 
 import { ID } from "./utils/config";
 
 import OBR from "@owlbear-rodeo/sdk";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 const playerName = ref("");
 const playerId = ref("");
 
-const handleDeckEvent = (event) => {
+const remainingCards = computed(() => gameDeck.value.size());
 
+const handleDeckEvent = (event) => {
   if (event === "draw") actionDraw(playerName.value);
   if (event === "draw-all") actionDrawAll(playerId.value);
   if (event === "shuffle") actionShuffle();
@@ -52,6 +53,7 @@ OBR.onReady(async () => {
   <header>
     <ActionBar
     :round-counter="roundCounter"
+    :remaining-cards="remainingCards"
     @deck-action="handleDeckEvent"
     />
   </header>

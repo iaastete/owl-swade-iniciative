@@ -13,6 +13,7 @@
   -moz-osx-font-smoothing: grayscale;
 
   --color-hover: #ff675f;
+  --color-bubble-bg: #666666;
 }
 
 a {
