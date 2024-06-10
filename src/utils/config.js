@@ -1,4 +1,4 @@
-const ID = "com.iaastete.owl-swade-iniciative";
+const ID = "app.web.owl-iniciative-tracker";
 const MAX_SIZE = 30;
 const MAP_SUITS = {
   Spade: "♠",
