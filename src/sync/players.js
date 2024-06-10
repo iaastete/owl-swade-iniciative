@@ -31,12 +31,14 @@ const trimPlayers = (playerId, partyIds) => {
         return !isPlayer && !isParty;
     });
 
-    if (toRemove.length === 0) return;
+    if (toRemove.length === 0) return false;
 
     toRemove.forEach((id) => {
         const index = players.value.findIndex((player) => player.id === id);
         players.value.splice(index, 1);
     });
+
+    return true;
 }
 
 const setupPlayerList = async (playerId, playerName) => {
@@ -50,19 +52,18 @@ const setupPlayerList = async (playerId, playerName) => {
     });
   
     const handlePartyChange = async (party) => {
-      // remove players that left
-      const partyIds = party.map((player) => player.id);
-      trimPlayers(playerId, partyIds);
-      // add new players
-      party.forEach(async (player) => {
-        const metadata = player.metadata;
-        addPlayer(player.id, player.name, metadata);
-      });
-  
-      // TODO check this
-      // players.value.sort((a, b) => {
-      //   return a.name.localeCompare(b.name);
-      // });
+        // avoid innecesary updates
+        if (party.length + 1 === players.value.length) return;
+
+        // remove players that left
+        const partyIds = party.map((player) => player.id);
+        const trimResult = trimPlayers(playerId, partyIds);
+        if (trimResult) return;
+
+        // add new players
+        party.forEach(async (player) => {
+            addPlayer(player.id, player.name, undefined);
+        });
     }
     OBR.party.onChange(handlePartyChange)
 }
@@ -88,8 +89,16 @@ const dealCardsToPlayers = (playerId, gameDeck, deckNeedsShuffle) => {
         player.suit = card.suit;
     });
     players.value.sort(customSortItems);
-    players.value.forEach((player) =>{
+    players.value.forEach(async (player) =>{
         if (player.id !== playerId) sendPlayerUpdate(player.id, player.name, 'deal');
+        else {
+            const playerMetadata = OBR.player.getMetadata();
+            OBR.player.setMetadata({
+                ...playerMetadata,
+                [`${ID}/metadata/value`]: player.value,
+                [`${ID}/metadata/suit`]: player.suit,
+            });
+        }
     });
 }
 
@@ -97,6 +106,15 @@ const setupMyComms = async (playerId) => {
     const channel = `${ID}/${playerId}`;
     OBR.broadcast.onMessage(channel, async (message) => {
         players.value =JSON.parse(message.data.value);
+
+        const player = players.value.find((player) => player.id === playerId);
+        const playerMetadata = await OBR.player.getMetadata();
+
+        OBR.player.setMetadata({
+            ...playerMetadata,
+            [`${ID}/metadata/value`]: player.value,
+            [`${ID}/metadata/suit`]: player.suit,
+        });
     });
 }
 
