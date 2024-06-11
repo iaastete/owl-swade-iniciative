@@ -15,16 +15,29 @@
             "value": "*"
           }
         ]
+      },
+      {
+        "source": "/icon.svg",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET"
+          },
+          {
+            "key": "Access-Control-Allow-Headers",
+            "value": "Content-Type, Authorization"
+          }
+        ]
       }
     ],
     "rewrites": [
       {
         "source": "**",
         "destination": "/index.html"
-      },
-      {
-        "source": "/manifest",
-        "destination": "/manifest.json"
       }
     ]
   }
