@@ -121,7 +121,7 @@ watch(props, (newProps, oldProps) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border: 1px solid grey;
+    background-color: var(--color-source-mono);
     border-radius: 6px;
     margin-bottom: 5px;
     margin-left: 5px;
@@ -131,7 +131,8 @@ watch(props, (newProps, oldProps) => {
 .aligned-element {
     display: flex;
     align-items: flex-end;
-    padding-right:10px;
+    padding-right: 10px;
+    color: white;
 }
 
 .aligned-text {

@@ -15,7 +15,7 @@ const props = defineProps(['queue']);
 
 <style scoped>
 .log-box {
-    border: 1px solid grey;
+    background-color: var(--color-source-mono);
     width: 96%;
     border-radius: 6px;
     min-height: 28%;
@@ -35,5 +35,6 @@ const props = defineProps(['queue']);
     justify-content: space-between;
     font-size: 14px;
     line-height: 0%;
+    color: white;
 }
 </style>

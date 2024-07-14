@@ -118,7 +118,7 @@
     color: #fff;
     /* border: 1px solid #ad8225; */
     position: absolute;
-    background-color: #282828;
+    background-color: var(--color-source);
     padding-top: 5px;
     left: 0;
     top: 0;

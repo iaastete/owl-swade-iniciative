@@ -57,6 +57,7 @@ h1 {
   margin: 0;
   margin-left: 10px;
   margin-bottom: 10px;
+  color: white;
 }
 
 .top-bar {
@@ -87,7 +88,7 @@ button {
     padding: 0px;
 }
 button:hover {
-    color: var(--color-hover);
+    color: var(--color-primary);
 }
 button:focus {
     outline: none;
